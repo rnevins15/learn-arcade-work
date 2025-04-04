@@ -3,14 +3,14 @@ import arcade
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 600
 
-def draw_shooting_strings():
+def draw_shooting_strings(x, y):
     arcade.draw_line(234, 400, 366, 400, arcade.csscolor.DARK_BLUE)
     arcade.draw_line(228, 385, 371, 385, arcade.csscolor.DARK_GRAY)
 
-def draw_ball():
+def draw_ball(x, y):
     arcade.draw_circle_filled(300, 330, 40, arcade.csscolor.ORANGE)
 
-def draw_stick():
+def draw_stick(x, y):
     arcade.draw_lrtb_rectangle_filled(285, 315, 300, 0, arcade.csscolor.BLACK)
     arcade.draw_lrtb_rectangle_filled(285, 315, 150, 0, arcade.csscolor.WHITE)
 def draw_head():
