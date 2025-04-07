@@ -4,42 +4,37 @@ SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 600
 
 def draw_shooting_strings(x, y):
-    arcade.draw_line(234, 400, 366, 400, arcade.csscolor.DARK_BLUE)
-    arcade.draw_line(228, 385, 371, 385, arcade.csscolor.DARK_GRAY)
+    arcade.draw_line(x - 66, y + 40, x + 66, y + 40, arcade.csscolor.DARK_BLUE)
+    arcade.draw_line(x - 72, y + 25, x + 71, y + 25, arcade.csscolor.DARK_GRAY)
 
 def draw_ball(x, y):
-    arcade.draw_circle_filled(300, 330, 40, arcade.csscolor.ORANGE)
+    arcade.draw_circle_filled(x, y - 30, 40, arcade.csscolor.ORANGE)
 
 def draw_stick(x, y):
-    arcade.draw_lrtb_rectangle_filled(285, 315, 300, 0, arcade.csscolor.BLACK)
-    arcade.draw_lrtb_rectangle_filled(285, 315, 150, 0, arcade.csscolor.WHITE)
-def draw_head():
-    arcade.draw_ellipse_filled(300, 360, 150, 175, arcade.csscolor.GRAY)
+    arcade.draw_lrtb_rectangle_filled(x - 15, x + 15, y - 60, y - 360, arcade.csscolor.BLACK)
+    arcade.draw_lrtb_rectangle_filled(x - 15, x + 15, y - 210, y - 360, arcade.csscolor.WHITE)
 
-def on_draw(delta_time):
-    arcade.start_render()
-    draw_stick()
-    draw_head()
-    draw_ball()
-    draw_shooting_strings()
+def draw_head(x, y):
+    arcade.draw_ellipse_filled(x, y, 150, 175, arcade.csscolor.GRAY)
 
 def main():
     arcade.open_window(SCREEN_WIDTH, SCREEN_HEIGHT, "Drawing with Functions")
     arcade.set_background_color(arcade.color.BLUE)
     arcade.start_render()
 
-    draw_stick()
+    draw_stick(300, 360)
 
-    draw_head()
+    draw_head(300, 360)
 
-    draw_ball()
+    draw_ball(300, 360)
 
-    draw_shooting_strings()
+    draw_shooting_strings(300, 360)
 # Finish drawing
     arcade.finish_render()
 
 # Keep the window up until someone closes it.
     arcade.run()
+    # Keep the window up until someone closes it.
 
 #Call main function to start program
 main()
