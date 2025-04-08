@@ -4,7 +4,7 @@ import arcade
 # --- Constants ---
 SPRITE_SCALING_PLAYER = 0.5
 SPRITE_SCALING_COIN = 0.2
-SPRITE_SCALING_ROCK = 0.2
+SPRITE_SCALING_ROCK = 0.5
 COIN_COUNT = 50
 ROCK_COUNT = 25
 
@@ -51,6 +51,8 @@ class MyGame(arcade.Window):
         self.star_sound = arcade.load_sound(":resources:sounds/coin5.wav")
         self.rock_sound = arcade.load_sound(":resources:sounds/rockHit2.wav")
 
+        self.game_over = False
+
     def setup(self):
         """ Set up the game and initialize the variables. """
 
@@ -68,6 +70,8 @@ class MyGame(arcade.Window):
         self.player_sprite.center_x = 50
         self.player_sprite.center_y = 50
         self.player_list.append(self.player_sprite)
+
+        self.game_over = False
 
         # Create the coins
         for i in range(COIN_COUNT):
@@ -100,10 +104,11 @@ class MyGame(arcade.Window):
         self.rock_list.draw()
 
         # Put the text on the screen.
-        output = f"Score: {self.score}"
+        output = "Score: " + str(self.score)
         arcade.draw_text(output, 10, 20, arcade.color.WHITE, 14)
 
         if len(self.coin_list) == 0:
+            self.game_over = True
             arcade.draw_text("Game Over", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
                              arcade.color.WHITE, 40, anchor_x="center")
 
@@ -116,6 +121,8 @@ class MyGame(arcade.Window):
 
     def update(self, delta_time):
         """ Movement and game logic """
+        if self.game_over:
+            return
 
         # Call update on all sprites (The sprites don't do much in this
         # example though.)
@@ -124,16 +131,17 @@ class MyGame(arcade.Window):
 
         # Generate a list of all sprites that collided with the player.
         hit_list = arcade.check_for_collision_with_list(self.player_sprite,
-                                                        self.coin_list,
-                                                        self.rock_list)
+                                                        self.coin_list)
 
         # Loop through each colliding sprite, remove it, and add to the score.
-        for coin in hit_list:
+        coins_hit = arcade.check_for_collision_with_list(self.player_sprite, self.coin_list)
+        for coin in coins_hit:
             coin.remove_from_sprite_lists()
             self.score += 1
             arcade.play_sound(self.star_sound)
 
-        for rock in hit_list:
+        rocks_hit = arcade.check_for_collision_with_list(self.player_sprite, self.rock_list)
+        for rock in rocks_hit:
             rock.remove_from_sprite_lists()
             self.score -= 1
             arcade.play_sound(self.rock_sound)
