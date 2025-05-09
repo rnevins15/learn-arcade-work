@@ -2,121 +2,170 @@ import arcade
 import random
 
 # --- Constants ---
-SCREEN_WIDTH = 600             # Width of the game window
-SCREEN_HEIGHT = 800            # Height of the game window
-SCREEN_TITLE = "Falling Objects Catcher - Part 2"  # Title shown at the top of the window
+SCREEN_WIDTH = 600
+SCREEN_HEIGHT = 800
+SCREEN_TITLE = "Falling Objects Catcher - Part 2"
 
-PLAYER_SPEED = 5               # Speed the player moves left/right
-ITEM_FALL_SPEED = 3            # Speed at which items fall down the screen
-SPAWN_RATE = 0.02              # Probability each frame that an item will spawn
-
-MAX_LIVES = 3                  # Starting number of lives for the player
+PLAYER_SPEED = 5
+SPAWN_RATE = 0.02
+MAX_LIVES = 3
 
 # --- Sprite for falling items ---
 class FallingItem(arcade.Sprite):
     def __init__(self, image, scale, item_type):
-        # Initialize the parent class (arcade.Sprite)
         super().__init__(image, scale)
-        self.item_type = item_type  # 'good' or 'bad' to define behavior on collision
+        self.item_type = item_type  # 'good', 'bad', 'powerup', 'slow'
 
     def update(self):
-        # Move the item downward
         self.center_y -= self.change_y
-
-        # Remove item if it falls below the screen
         if self.top < 0:
             self.remove_from_sprite_lists()
 
 # --- Main Game Window ---
 class CatchGame(arcade.Window):
     def __init__(self):
-        # Set up the main game window with dimensions and title
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
         arcade.set_background_color(arcade.color.DARK_BLUE)
 
-        # Game state and sprite variables
-        self.player = None              # The player's character
-        self.items = None               # List of all falling items
-        self.score = 0                  # Player's score
-        self.lives = MAX_LIVES          # Player's remaining lives
-        self.game_over = False          # Whether the game is over
-
-        # Load sound effects
-        self.catch_sound = arcade.load_sound(":resources:sounds/coin5.wav")
-        self.hit_sound = arcade.load_sound(":resources:sounds/error1.wav")
-
-    def setup(self):
-        """Initial game setup: load sprites, reset score/lives."""
-        # Create and place the player sprite
-        self.player = arcade.Sprite(":resources:images/animated_characters/male_person/malePerson_idle.png", 0.5)
-        self.player.center_x = SCREEN_WIDTH // 2
-        self.player.center_y = 60
-
-        # Create an empty list for falling items
-        self.items = arcade.SpriteList()
-
-        # Reset score, lives, and game state
+        self.player = None
+        self.items = None
         self.score = 0
         self.lives = MAX_LIVES
         self.game_over = False
 
+        self.current_screen = "start"
+
+        # Power-up tracking
+        self.slow_motion_active = False
+        self.slow_motion_timer = 0
+
+        # Sounds
+        self.catch_sound = arcade.load_sound(":resources:sounds/coin5.wav")
+        self.hit_sound = arcade.load_sound(":resources:sounds/explosion2.wav")
+        self.powerup_sound = arcade.load_sound(":resources:sounds/upgrade1.wav")
+
+    def setup(self):
+        self.player = arcade.Sprite(":resources:images/animated_characters/male_person/malePerson_idle.png", 0.5)
+        self.player.center_x = SCREEN_WIDTH // 2
+        self.player.center_y = 60
+
+        self.items = arcade.SpriteList()
+        self.score = 0
+        self.lives = MAX_LIVES
+        self.game_over = False
+
+        self.slow_motion_active = False
+        self.slow_motion_timer = 0
+
     def on_draw(self):
-        """Render all visuals on the screen."""
-        arcade.start_render()  # Start drawing
+        arcade.start_render()
 
-        # Draw the player and all falling items
-        self.player.draw()
-        self.items.draw()
+        if self.current_screen == "start":
+            arcade.draw_text("Falling Objects Catcher", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100,
+                             arcade.color.WHITE, font_size=36, anchor_x="center")
+            arcade.draw_text("Catch the mushrooms!", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40,
+                             arcade.color.LIGHT_GREEN, 20, anchor_x="center")
+            arcade.draw_text("Avoid the bombs!", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 10,
+                             arcade.color.RED, 20, anchor_x="center")
+            arcade.draw_text("Blue Gems give you extra lives!", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 20,
+                             arcade.color.PINK, 20, anchor_x="center")
+            arcade.draw_text("Green Flags = Slow Motion!", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50,
+                             arcade.color.LIGHT_BLUE, 20, anchor_x="center")
+            arcade.draw_text("Use LEFT and RIGHT arrows to move", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 90,
+                             arcade.color.GRAY, 16, anchor_x="center")
+            arcade.draw_text("Press SPACE to Start", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 140,
+                             arcade.color.YELLOW, 24, anchor_x="center")
 
-        # Display score and lives
-        arcade.draw_text(f"Score: {self.score}", 10, SCREEN_HEIGHT - 30, arcade.color.WHITE, 20)
-        arcade.draw_text(f"Lives: {self.lives}", SCREEN_WIDTH - 100, SCREEN_HEIGHT - 30, arcade.color.WHITE, 20)
+        elif self.current_screen == "game":
+            self.player.draw()
+            self.items.draw()
 
-        # If the game is over, display "GAME OVER"
-        if self.game_over:
-            arcade.draw_text("GAME OVER", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2,
-                             arcade.color.RED, 40)
+            arcade.draw_text(f"Score: {self.score}", 10, SCREEN_HEIGHT - 30, arcade.color.WHITE, 20)
+            arcade.draw_text(f"Lives: {self.lives}", SCREEN_WIDTH - 100, SCREEN_HEIGHT - 30, arcade.color.WHITE, 20)
+
+            if self.slow_motion_active:
+                arcade.draw_text("SLOW MOTION!", SCREEN_WIDTH // 2, SCREEN_HEIGHT - 30,
+                                 arcade.color.LIGHT_BLUE, 20, anchor_x="center")
+
+        elif self.current_screen == "game_over":
+            arcade.draw_text("GAME OVER", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40,
+                             arcade.color.RED, 40, anchor_x="center")
+            arcade.draw_text(f"Final Score: {self.score}", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
+                             arcade.color.WHITE, 24, anchor_x="center")
+            arcade.draw_text("Press SPACE to Restart", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 60,
+                             arcade.color.YELLOW, 20, anchor_x="center")
 
     def on_update(self, delta_time):
-        """Game logic runs here every frame (60 times per second)."""
-        if self.game_over:
-            return  # Don't update anything if the game is over
+        if self.current_screen != "game" or self.game_over:
+            return
 
-        # --- Item spawning ---
+        # --- Item Spawning ---
         if random.random() < SPAWN_RATE:
-            # 80% chance of spawning a good item
-            if random.random() < 0.8:
+            rand = random.random()
+            if rand < 0.75:
                 item = FallingItem(":resources:images/tiles/mushroomRed.png", 0.5, "good")
-            else:
-                # 20% chance of spawning a bad item
+            elif rand < 0.9:
                 item = FallingItem(":resources:images/tiles/bomb.png", 0.5, "bad")
+            elif rand < 0.97:
+                item = FallingItem(":resources:images/items/gemBlue.png", 0.5, "powerup")
+            else:
+                item = FallingItem(":resources:images/items/flagGreen2.png", 0.5, "slow")
 
-            # Position the item at a random horizontal location, above the screen
+            # Assign a random fall speed, slower if slow motion is active
+            base_speed = random.uniform(3, 8)
+            item.change_y = base_speed * 0.5 if self.slow_motion_active else base_speed
             item.center_x = random.randint(20, SCREEN_WIDTH - 20)
             item.center_y = SCREEN_HEIGHT + 20
-            item.change_y = ITEM_FALL_SPEED
             self.items.append(item)
 
-        # Update positions of items and player
         self.items.update()
         self.player.update()
 
-        # --- Check for collisions between player and items ---
+        # Keep player on screen
+        if self.player.left < 0:
+            self.player.left = 0
+        elif self.player.right > SCREEN_WIDTH:
+            self.player.right = SCREEN_WIDTH
+
+        # --- Handle collisions ---
         for item in self.items:
             if arcade.check_for_collision(self.player, item):
                 if item.item_type == "good":
                     self.score += 1
                     arcade.play_sound(self.catch_sound)
-                else:
+                elif item.item_type == "bad":
                     self.lives -= 1
                     arcade.play_sound(self.hit_sound)
                     if self.lives <= 0:
-                        self.game_over = True  # End the game
-                item.remove_from_sprite_lists()  # Remove the item that was caught
+                        self.game_over = True
+                        self.current_screen = "game_over"
+                elif item.item_type == "powerup":
+                    if self.lives < MAX_LIVES:
+                        self.lives += 1
+                    arcade.play_sound(self.powerup_sound)
+                elif item.item_type == "slow":
+                    self.slow_motion_active = True
+                    self.slow_motion_timer = 5.0
+                    arcade.play_sound(self.powerup_sound)
+
+                item.remove_from_sprite_lists()
+
+        # --- Power-up Timer ---
+        if self.slow_motion_active:
+            self.slow_motion_timer -= delta_time
+            if self.slow_motion_timer <= 0:
+                self.slow_motion_active = False
 
     def on_key_press(self, key, modifiers):
-        """Move the player left or right when arrow keys are pressed."""
-        if self.game_over:
+        if key == arcade.key.SPACE:
+            if self.current_screen == "start":
+                self.setup()
+                self.current_screen = "game"
+            elif self.current_screen == "game_over":
+                self.setup()
+                self.current_screen = "game"
+
+        if self.current_screen != "game":
             return
 
         if key == arcade.key.LEFT:
@@ -125,12 +174,10 @@ class CatchGame(arcade.Window):
             self.player.change_x = PLAYER_SPEED
 
     def on_key_release(self, key, modifiers):
-        """Stop moving when arrow keys are released."""
         if key in [arcade.key.LEFT, arcade.key.RIGHT]:
             self.player.change_x = 0
 
-# --- Start the game ---
+# --- Run the Game ---
 if __name__ == "__main__":
     game = CatchGame()
-    game.setup()
     arcade.run()
